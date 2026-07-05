@@ -1,0 +1,103 @@
+.login-form {
+  width: 100%;
+}
+
+.login-form-eyebrow {
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: #d9b54a;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.login-form-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #f3f1ea;
+  margin-bottom: 24px;
+}
+
+.login-form-warning {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #e0b45a;
+  background-color: rgba(217, 181, 74, 0.1);
+  border: 1px solid rgba(217, 181, 74, 0.3);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 20px;
+}
+
+.login-form-warning code {
+  font-family: "Courier New", monospace;
+  font-size: 11px;
+}
+
+.login-form-label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #9c9686;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.login-form-input {
+  width: 100%;
+  background-color: #1c1812;
+  border: 1px solid rgba(217, 181, 74, 0.25);
+  color: #f3f1ea;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 18px;
+}
+
+.login-form-input:focus {
+  outline: none;
+  border-color: #d9b54a;
+}
+
+.login-form-error {
+  font-size: 13px;
+  color: #e2836a;
+  margin-bottom: 14px;
+}
+
+.login-form-submit {
+  width: 100%;
+  background-color: #d9b54a;
+  border: 1px solid #d9b54a;
+  color: #20180a;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 13px 0;
+  border-radius: 8px;
+  margin-top: 4px;
+}
+
+.login-form-submit:hover {
+  background-color: #c9a227;
+  border-color: #c9a227;
+}
+
+.login-form-submit:disabled {
+  opacity: 0.6;
+}
+
+.login-form-switch {
+  margin-top: 20px;
+  font-size: 13px;
+  color: #9c9686;
+  text-align: center;
+}
+
+.login-form-switch button {
+  background: none;
+  border: none;
+  color: #d9b54a;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 0;
+}

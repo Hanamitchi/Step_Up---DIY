@@ -1,0 +1,58 @@
+.editor-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #0c0b09;
+  color: #f3f1ea;
+}
+
+.editor-topbar {
+  flex: 0 0 56px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 20px;
+  border-bottom: 1px solid rgba(217, 181, 74, 0.22);
+}
+
+.editor-back {
+  background: none;
+  border: 1px solid rgba(217, 181, 74, 0.25);
+  color: #f3f1ea;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 7px;
+}
+
+.editor-back:hover {
+  border-color: #d9b54a;
+  color: #d9b54a;
+}
+
+.editor-project-name {
+  background: none;
+  border: none;
+  color: #9c9686;
+  font-size: 13px;
+  text-align: center;
+  outline: none;
+  max-width: 240px;
+  border-bottom: 1px dashed transparent;
+}
+
+.editor-project-name:hover,
+.editor-project-name:focus {
+  border-bottom: 1px dashed #c9a227;
+  color: #f3f1ea;
+}
+
+.editor-topbar-spacer {
+  flex: 1;
+}
+
+.editor-main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}

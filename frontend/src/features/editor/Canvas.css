@@ -1,0 +1,114 @@
+.canvas-stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  padding: 24px;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px) 0 0 / 28px 28px,
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px) 0 0 / 28px 28px;
+}
+
+.canvas-artboard {
+  position: relative;
+  width: min(560px, 70vh);
+  height: min(560px, 70vh);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(217, 181, 74, 0.15);
+}
+
+.canvas-dust {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.55;
+  background-image:
+    radial-gradient(2px 2px at 10% 20%, #d9b54a 60%, transparent 61%),
+    radial-gradient(1.6px 1.6px at 25% 75%, #d9b54a 60%, transparent 61%),
+    radial-gradient(2px 2px at 45% 12%, #d9b54a 60%, transparent 61%),
+    radial-gradient(1.5px 1.5px at 60% 55%, #d9b54a 60%, transparent 61%),
+    radial-gradient(2px 2px at 80% 30%, #d9b54a 60%, transparent 61%),
+    radial-gradient(1.6px 1.6px at 90% 70%, #d9b54a 60%, transparent 61%),
+    radial-gradient(1.4px 1.4px at 35% 90%, #d9b54a 60%, transparent 61%),
+    radial-gradient(1.8px 1.8px at 70% 88%, #d9b54a 60%, transparent 61%);
+}
+
+.editor-el {
+  position: absolute;
+  cursor: grab;
+  user-select: none;
+}
+
+.editor-el:active {
+  cursor: grabbing;
+}
+
+.editor-el-selected {
+  outline: 1.5px dashed #d9b54a;
+  outline-offset: 2px;
+}
+
+.editor-el-inner {
+  width: 100%;
+  height: 100%;
+}
+
+.editor-el-text {
+  width: 100%;
+  height: 100%;
+  line-height: 1.25;
+  word-break: break-word;
+  white-space: pre-wrap;
+  outline: none;
+}
+
+.editor-el-shape {
+  width: 100%;
+  height: 100%;
+}
+
+.editor-el-button {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  text-align: center;
+}
+
+.editor-handle {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  background-color: #d9b54a;
+  border: 1.5px solid #0c0b09;
+  border-radius: 50%;
+  z-index: 5;
+}
+
+.editor-handle-se {
+  right: -6px;
+  bottom: -6px;
+  cursor: se-resize;
+}
+
+.editor-handle-nw {
+  left: -6px;
+  top: -6px;
+  cursor: nw-resize;
+}
+
+.editor-handle-ne {
+  right: -6px;
+  top: -6px;
+  cursor: ne-resize;
+}
+
+.editor-handle-sw {
+  left: -6px;
+  bottom: -6px;
+  cursor: sw-resize;
+}

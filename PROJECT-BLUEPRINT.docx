@@ -1,0 +1,391 @@
+================================================================
+STEP UP EDITOR — FULL PROJECT BLUEPRINT
+A drag-and-drop UI editor for event greetings, invitations,
+and party systems. This document is the master reference for
+planning, hiring, and building the product.
+================================================================
+
+
+----------------------------------------------------------------
+1. WHAT WE'RE BUILDING — ONE PARAGRAPH
+----------------------------------------------------------------
+
+A web app where a non-technical user drags elements (text,
+images, countdowns, buttons, effects) onto a canvas, customizes
+them through a side panel, and clicks "Get Link" — which
+generates a real, animated, interactive HTML page, uploads it
+to a hosting service automatically, and hands back a shareable
+URL. No coding knowledge required from the end user.
+
+Think: Canva, but the output is a living interactive web page
+instead of a flat image, and the niche is event UI (invitations,
+greetings, party dashboards) instead of general graphic design.
+
+
+----------------------------------------------------------------
+2. THE FOUR SYSTEMS — HIGH LEVEL
+----------------------------------------------------------------
+
+  SYSTEM A — THE EDITOR (frontend)
+    What the user sees and interacts with. Drag-and-drop canvas,
+    element library, properties panel, live preview.
+
+  SYSTEM B — THE DATA LAYER (storage)
+    Where a user's in-progress and finished projects are saved,
+    so they can leave and come back, or edit later.
+
+  SYSTEM C — THE GENERATOR (backend logic)
+    Converts a saved project (structured data) into a real,
+    standalone HTML file with working animations and interactions.
+
+  SYSTEM D — THE PUBLISHER (hosting integration)
+    Takes the generated HTML file, sends it to a hosting API
+    (Netlify), and returns a live shareable URL to the user.
+
+
+----------------------------------------------------------------
+3. TECH STACK — WHAT LANGUAGE FOR WHAT PART
+----------------------------------------------------------------
+
+  SYSTEM A — THE EDITOR (frontend)
+  --------------------------------
+  Core language    : JavaScript (or TypeScript — recommended,
+                      see note below)
+  Framework        : React
+                      (most common choice for drag-and-drop
+                      editors — huge ecosystem, easy to hire for)
+  Drag-and-drop    : A library, not built from scratch —
+                      "dnd-kit" or "react-dnd" are the standard
+                      choices. Building drag-and-drop physics by
+                      hand is a waste of time when solved
+                      libraries exist.
+  Styling          : CSS or Tailwind CSS
+                      (Tailwind speeds up building UI panels —
+                      optional but common in modern teams)
+  State management : React's built-in state is enough at first.
+                      If the app grows complex, "Zustand" is a
+                      lightweight option (simpler than Redux).
+
+  NOTE ON TYPESCRIPT:
+  TypeScript is JavaScript with safety rails — it catches
+  mistakes before they become bugs. For a project this size
+  with a team (not solo), TypeScript is worth the small extra
+  learning curve. Recommend hiring developers who already know
+  it, or budget time for the team to use it from day one.
+
+
+  SYSTEM B — THE DATA LAYER (storage)
+  ------------------------------------
+  In-progress drafts : Browser's own storage (localStorage or
+                        IndexedDB) — no server needed for this
+                        part. Free, simple, already built into
+                        every browser.
+  Saved projects      : A real database, once a user wants to
+                        keep something permanently and access
+                        it later from any device.
+  Database choice     : "Supabase" or "Firebase"
+                        Both are "backend as a service" — they
+                        give you a real database, user accounts,
+                        and file storage without needing to
+                        build or manage your own server.
+                        Supabase uses PostgreSQL (more standard,
+                        more portable). Firebase is Google's,
+                        slightly easier for total beginners.
+                        Either is a reasonable choice — Supabase
+                        is the more commonly recommended default
+                        for new projects in 2025-2026.
+
+
+  SYSTEM C — THE GENERATOR (backend logic)
+  ------------------------------------------
+  Core language    : JavaScript / TypeScript (Node.js)
+                      Using the same language as the frontend
+                      means your team doesn't need to context-
+                      switch between two different programming
+                      languages — a major efficiency win for a
+                      small team.
+  What it does     : Takes the structured project data (a JSON
+                      object describing every element, its
+                      position, color, animation, and text) and
+                      programmatically writes out a real HTML
+                      file — string templates, not magic.
+  Where it runs    : A "serverless function" — a small piece of
+                      backend code that runs on demand, instead
+                      of needing a server running 24/7.
+                      Options: Netlify Functions (pairs naturally
+                      with Netlify hosting), or Supabase Edge
+                      Functions if using Supabase for the database.
+
+
+  SYSTEM D — THE PUBLISHER (hosting integration)
+  -------------------------------------------------
+  Service          : Netlify (their official API)
+  Language         : JavaScript/TypeScript again — calling
+                      Netlify's API is just sending an HTTP
+                      request with the file attached, same
+                      language as everything else.
+  What it does     : Uploads the generated HTML file to Netlify,
+                      Netlify hosts it and returns a live URL,
+                      which gets shown to the user and saved
+                      against their project record.
+
+
+  SUMMARY — ONE LANGUAGE FAMILY FOR EVERYTHING
+  -----------------------------------------------
+  JavaScript / TypeScript covers all four systems:
+  React (frontend) + Node.js (backend logic) + same language
+  throughout. This is a deliberate, common choice for small
+  teams — it means anyone on the team can technically read and
+  contribute to any part of the codebase, instead of needing
+  separate specialists for separate languages.
+
+
+----------------------------------------------------------------
+4. FULL FILE / FOLDER STRUCTURE
+----------------------------------------------------------------
+
+stepup-editor/
+|
+|-- frontend/                       <- SYSTEM A: The Editor
+|   |-- src/
+|   |   |-- components/
+|   |   |   |-- Canvas/             <- the live preview area
+|   |   |   |-- ElementPanel/       <- left sidebar (drag source)
+|   |   |   |-- PropertiesPanel/    <- right sidebar (edit selected)
+|   |   |   |-- Toolbar/            <- top bar (preview, save, get link)
+|   |   |   |-- Elements/           <- the actual draggable pieces
+|   |   |       |-- TextElement.tsx
+|   |   |       |-- ImageElement.tsx
+|   |   |       |-- CountdownElement.tsx
+|   |   |       |-- ButtonElement.tsx
+|   |   |       |-- EffectElement.tsx
+|   |   |
+|   |   |-- store/                  <- state management
+|   |   |   |-- projectStore.ts     <- current project being edited
+|   |   |   |-- userStore.ts        <- logged-in user info
+|   |   |
+|   |   |-- lib/
+|   |   |   |-- saveProject.ts      <- talks to the database
+|   |   |   |-- loadProject.ts
+|   |   |   |-- exportProject.ts    <- calls the generator (System C)
+|   |   |
+|   |   |-- pages/
+|   |   |   |-- EditorPage.tsx      <- the main editor screen
+|   |   |   |-- DashboardPage.tsx   <- "my projects" list
+|   |   |   |-- LoginPage.tsx
+|   |   |
+|   |   |-- App.tsx
+|   |   |-- main.tsx
+|   |
+|   |-- package.json
+|   |-- vite.config.ts              <- Vite is the standard tool
+|                                       to run/build a React app
+|
+|-- backend/                        <- SYSTEM C: The Generator
+|   |-- functions/
+|   |   |-- generate-html.ts        <- JSON project -> real HTML
+|   |   |-- publish-to-netlify.ts   <- SYSTEM D: calls Netlify API
+|   |   |-- templates/              <- HTML "skeleton" templates
+|   |       |-- base-template.html  <- shared structure
+|   |       |-- animations.css      <- shared animation library
+|   |
+|   |-- package.json
+|
+|-- shared/                          <- types/logic used by both
+|   |-- types.ts                     <- defines what a "project",
+|                                        "element", "animation" etc
+|                                        actually look like in code
+|
+|-- database/                        <- SYSTEM B: schema definitions
+|   |-- schema.sql                   <- if using Supabase
+|
+|-- docs/                            <- internal documentation
+|   |-- ARCHITECTURE.md
+|   |-- SETUP.md
+|
+|-- README.md
+
+
+----------------------------------------------------------------
+5. THE CORE DATA STRUCTURE (what a "project" actually is)
+----------------------------------------------------------------
+
+Every project the user builds is, underneath everything, just
+this kind of structured data. Understanding this is the single
+most important concept in the whole system — once this exists,
+the editor reads/writes it, the generator turns it into HTML,
+and the database stores it.
+
+  {
+    "projectId": "abc123",
+    "title": "Andrea's 18th Birthday",
+    "theme": {
+      "primaryColor": "#c9a84c",
+      "backgroundColor": "#0d0d0d"
+    },
+    "elements": [
+      {
+        "id": "el-1",
+        "type": "text",
+        "content": "Andrea's 18th",
+        "position": { "x": 50, "y": 100 },
+        "animation": "fade-in"
+      },
+      {
+        "id": "el-2",
+        "type": "countdown",
+        "targetDate": "2025-07-12T18:00:00",
+        "position": { "x": 50, "y": 200 }
+      },
+      {
+        "id": "el-3",
+        "type": "button",
+        "label": "RSVP now",
+        "link": "#rsvp",
+        "position": { "x": 50, "y": 400 }
+      }
+    ]
+  }
+
+This is what gets saved to the database, and this is what the
+Generator (System C) reads to build the final HTML page.
+
+
+----------------------------------------------------------------
+6. TEAM ROLES — WHO YOU ACTUALLY NEED
+----------------------------------------------------------------
+
+This can realistically be built by 2-4 people. Here's the
+breakdown by role, not headcount — one person can sometimes
+cover two roles if they're skilled enough.
+
+  ROLE 1 — FRONTEND DEVELOPER (most critical hire)
+  ---------------------------------------------------
+  Skills needed   : React, JavaScript/TypeScript, CSS,
+                    drag-and-drop libraries
+  Owns            : System A (the editor itself)
+  Why critical    : This is the part the user actually sees and
+                    touches. If this isn't good, nothing else
+                    matters.
+
+  ROLE 2 — BACKEND / FULL-STACK DEVELOPER
+  ---------------------------------------------------
+  Skills needed   : Node.js, JavaScript/TypeScript, REST APIs,
+                    database experience (Supabase/Firebase or
+                    SQL in general)
+  Owns            : System B (database), System C (generator),
+                    System D (Netlify publishing)
+  Why critical    : This is the engineering-heavy plumbing that
+                    makes "Get Link" actually work.
+
+  ROLE 3 — UI/UX DESIGNER (can be you, or a hire)
+  ---------------------------------------------------
+  Skills needed   : Figma, understanding of usability for
+                    non-technical users, your existing eye for
+                    the Step Up visual style
+  Owns            : What the editor itself looks like, what the
+                    output templates look like, the overall
+                    "feel" of using the product
+  Why critical    : You already have this instinct — everything
+                    we've built together proves it. This role
+                    could stay yours even with a dev team.
+
+  ROLE 4 — QA / TESTER (can start part-time, even you)
+  ---------------------------------------------------
+  Skills needed   : Patience, attention to detail, testing on
+                    real phones and browsers
+  Owns            : Making sure exported pages actually work on
+                    real devices, catching bugs before users do
+  Why critical    : An invitation that breaks on someone's phone
+                    is the worst possible failure for this
+                    product — it's the whole point.
+
+  OPTIONAL ROLE 5 — PROJECT MANAGER (only needed once team grows)
+  -------------------------------------------------------------
+  Not needed for a team of 2-3. Worth adding only once you have
+  4+ people and things start getting hard to track.
+
+
+----------------------------------------------------------------
+7. BUILD PHASES — REALISTIC ORDER
+----------------------------------------------------------------
+
+  PHASE 1 — Editor canvas only (no backend)
+    Frontend dev builds: drag elements onto canvas, select and
+    edit them, live preview. Runs entirely in the browser, no
+    server needed yet. This alone is demoable and testable.
+
+  PHASE 2 — Local save/load
+    Add localStorage so a project survives a page refresh.
+    Proves the data structure (Section 5) works in practice.
+
+  PHASE 3 — The Generator
+    Backend dev builds the JSON-to-HTML converter. Test it by
+    manually feeding it sample project data and checking the
+    output HTML actually works when opened in a browser.
+
+  PHASE 4 — Real accounts + database
+    Add Supabase/Firebase. Users can sign up, save projects
+    permanently, and see a dashboard of their past projects.
+
+  PHASE 5 — Netlify publishing
+    Wire up the "Get Link" button to actually call the Generator,
+    then the Netlify API, and return a real working URL.
+
+  PHASE 6 — Polish + launch
+    Real animation presets, more element types, mobile-friendly
+    editor itself, onboarding for first-time users.
+
+
+----------------------------------------------------------------
+8. WHAT YOU SHOULD PERSONALLY STUDY FIRST
+----------------------------------------------------------------
+
+Even hiring a team, understanding the basics means you can
+direct the project intelligently instead of being talked over.
+Suggested order, easiest to hardest:
+
+  1. HTML/CSS basics            - you already know this well
+                                    from everything we've built
+  2. JavaScript fundamentals     - variables, functions, arrays,
+                                    objects (this maps directly
+                                    to Section 5's data structure)
+  3. What React actually is      - components, props, state
+                                    (conceptual understanding is
+                                    enough — you don't need to
+                                    write production React)
+  4. What an API call is         - the concept of one program
+                                    asking another program for
+                                    something over the internet
+                                    (this is literally what
+                                    "calling the Netlify API"
+                                    means)
+  5. What a database is          - tables, rows, basic concept
+                                    of storing/retrieving records
+
+Free resources: freeCodeCamp.org and The Odin Project both
+cover this exact path, free, structured, beginner-friendly.
+
+
+----------------------------------------------------------------
+9. ROUGH COST REALITY (for planning, not exact quotes)
+----------------------------------------------------------------
+
+  Free while building/testing:
+    - Netlify (hosting + functions) — free tier
+    - Supabase or Firebase (database) — free tier
+    - All the code/tools themselves — free, open source
+
+  Costs that show up once real:
+    - Developer salaries/rates — the actual biggest cost
+    - Eventually: Netlify/Supabase paid tiers once usage scales
+    - Possibly: a custom domain for the editor itself
+
+The infrastructure itself stays nearly free for a long time.
+The real cost of this project is development time/talent, not
+hosting or tools.
+
+
+================================================================
+END OF BLUEPRINT
+================================================================

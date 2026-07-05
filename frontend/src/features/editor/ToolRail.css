@@ -1,0 +1,38 @@
+.tool-rail {
+  flex: 0 0 84px;
+  border-right: 1px solid rgba(217, 181, 74, 0.22);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 0;
+  gap: 4px;
+  overflow-y: auto;
+  background-color: #0c0b09;
+}
+
+.tool-rail-btn {
+  width: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 4px;
+  border-radius: 9px;
+  background: none;
+  border: 1px solid transparent;
+  color: #9c9686;
+  font-size: 10px;
+  letter-spacing: 0.3px;
+  font-weight: 600;
+}
+
+.tool-rail-btn:hover {
+  color: #f3f1ea;
+  background-color: #1f1a14;
+}
+
+.tool-rail-btn-active {
+  color: #d9b54a;
+  background-color: rgba(217, 181, 74, 0.14);
+  border-color: rgba(217, 181, 74, 0.22);
+}

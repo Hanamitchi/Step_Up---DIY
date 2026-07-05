@@ -1,0 +1,117 @@
+.new-design-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(12, 11, 9, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+
+.new-design-panel {
+  position: relative;
+  width: 520px;
+  max-width: 100%;
+  background-color: #161310;
+  border: 1px solid rgba(217, 181, 74, 0.25);
+  border-radius: 14px;
+  padding: 36px;
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.6);
+}
+
+.new-design-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: #9c9686;
+  font-size: 22px;
+  line-height: 1;
+  padding: 4px;
+}
+
+.new-design-close:hover {
+  color: #d9b54a;
+}
+
+.new-design-eyebrow {
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: #d9b54a;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.new-design-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #f3f1ea;
+  margin-bottom: 26px;
+}
+
+.new-design-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.new-design-card {
+  position: relative;
+  background-color: #1f1a14;
+  border: 1px solid rgba(217, 181, 74, 0.22);
+  border-radius: 12px;
+  padding: 24px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  text-align: left;
+}
+
+.new-design-card:hover:not(.new-design-card-disabled) {
+  border-color: #d9b54a;
+  transform: translateY(-2px);
+}
+
+.new-design-card-icon {
+  font-size: 28px;
+}
+
+.new-design-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f3f1ea;
+}
+
+.new-design-card-desc {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #9c9686;
+}
+
+.new-design-card-disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.new-design-card-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+  color: #d9b54a;
+  border: 1px solid rgba(217, 181, 74, 0.35);
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+@media (max-width: 560px) {
+  .new-design-options {
+    grid-template-columns: 1fr;
+  }
+}
