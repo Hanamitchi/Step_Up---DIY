@@ -1,6 +1,6 @@
 import { createContext, useContext, useState } from "react";
 import type { ReactNode } from "react";
-import type { CanvasElement, Page } from "../features/editor/editorTypes";
+import type { CanvasElement, Page, ToolKind } from "../features/editor/editorTypes";
 
 let pageCounter = 1;
 function nextPageId() {
@@ -20,12 +20,20 @@ function createBlankPage(): Page {
   };
 }
 
+export type ActiveTextSelection = {
+  elementId: string;
+  range: Range;
+  container: HTMLElement;
+};
+
 type EditorContextValue = {
   pages: Page[];
   currentPageId: string;
   currentPage: Page;
   currentPageIndex: number;
   selectedId: string | null;
+  pendingTool: ToolKind | null;
+  activeSelection: ActiveTextSelection | null;
   setCurrentPageId: (id: string) => void;
   addPage: () => void;
   selectElement: (id: string | null) => void;
@@ -33,6 +41,9 @@ type EditorContextValue = {
   updateElement: (id: string, patch: Partial<CanvasElement>) => void;
   deleteElement: (id: string) => void;
   updatePage: (patch: Partial<Page>) => void;
+  setPendingTool: (tool: ToolKind | null) => void;
+  setActiveSelection: (selection: ActiveTextSelection | null) => void;
+  reorderElement: (id: string, action: "front" | "forward" | "backward" | "back") => void;
 };
 
 const EditorContext = createContext<EditorContextValue | undefined>(undefined);
@@ -41,6 +52,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const [pages, setPages] = useState<Page[]>(() => [createBlankPage()]);
   const [currentPageId, setCurrentPageId] = useState(() => pages[0].id);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [pendingTool, setPendingTool] = useState<ToolKind | null>(null);
+  const [activeSelection, setActiveSelection] = useState<ActiveTextSelection | null>(null);
 
   const currentPageIndex = Math.max(
     0,
@@ -57,11 +70,16 @@ export function EditorProvider({ children }: { children: ReactNode }) {
 
   function selectElement(id: string | null) {
     setSelectedId(id);
+    setActiveSelection(null);
   }
 
   function addElement(el: CanvasElement) {
     setPages((prev) =>
-      prev.map((p) => (p.id === currentPageId ? { ...p, elements: [...p.elements, el] } : p))
+      prev.map((p) =>
+        p.id === currentPageId
+          ? { ...p, elements: [...p.elements, { ...el, zIndex: p.elements.length + 1 }] }
+          : p
+      )
     );
     setSelectedId(el.id);
   }
@@ -94,19 +112,44 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     setPages((prev) => prev.map((p) => (p.id === currentPageId ? { ...p, ...patch } : p)));
   }
 
+  function reorderElement(id: string, action: "front" | "forward" | "backward" | "back") {
+    setPages((prev) =>
+      prev.map((p) => {
+        if (p.id !== currentPageId) return p;
+        const sorted = [...p.elements].sort((a, b) => a.zIndex - b.zIndex);
+        const index = sorted.findIndex((el) => el.id === id);
+        if (index === -1) return p;
+
+        const [item] = sorted.splice(index, 1);
+        if (action === "front") sorted.push(item);
+        else if (action === "back") sorted.unshift(item);
+        else if (action === "forward") sorted.splice(Math.min(index + 1, sorted.length), 0, item);
+        else if (action === "backward") sorted.splice(Math.max(index - 1, 0), 0, item);
+
+        const restamped = sorted.map((el, i) => ({ ...el, zIndex: i + 1 }));
+        return { ...p, elements: restamped };
+      })
+    );
+  }
+
   const value: EditorContextValue = {
     pages,
     currentPageId,
     currentPage,
     currentPageIndex,
     selectedId,
+    pendingTool,
+    activeSelection,
     setCurrentPageId,
     addPage,
     selectElement,
     addElement,
     updateElement,
     deleteElement,
-    updatePage
+    updatePage,
+    setPendingTool,
+    setActiveSelection,
+    reorderElement
   };
 
   return <EditorContext.Provider value={value}>{children}</EditorContext.Provider>;

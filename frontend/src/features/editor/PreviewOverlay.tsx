@@ -16,6 +16,8 @@ type Props = {
 function PreviewOverlay({ onExit }: Props) {
   const { pages, currentPage, currentPageIndex, setCurrentPageId } = useEditor();
   const [countdown, setCountdown] = useState(currentPage.countdownSeconds);
+  const [visibleIds, setVisibleIds] = useState<Set<string>>(new Set());
+  const [burstEffect, setBurstEffect] = useState<string | null>(null);
 
   const hasNext = currentPageIndex < pages.length - 1;
   const hasPrev = currentPageIndex > 0;
@@ -32,8 +34,34 @@ function PreviewOverlay({ onExit }: Props) {
     }
   }
 
+  function handleButtonClick(action: { kind: string; effect?: string; url?: string }) {
+    if (action.kind === "next-page") goNext();
+    if (action.kind === "effect" && action.effect) {
+      setBurstEffect(null);
+      requestAnimationFrame(() => setBurstEffect(action.effect as string));
+    }
+    if (action.kind === "link" && action.url) {
+      window.open(action.url, "_blank", "noopener,noreferrer");
+    }
+  }
+
+  // reset per-page state (page-load countdown + element appear timers) whenever the page changes
   useEffect(() => {
     setCountdown(currentPage.countdownSeconds);
+    setVisibleIds(new Set());
+    setBurstEffect(currentPage.surpriseEffect !== "none" ? currentPage.surpriseEffect : null);
+
+    const timers = currentPage.elements.map((el) =>
+      setTimeout(() => {
+        setVisibleIds((prev) => new Set(prev).add(el.id));
+      }, el.appearDelay * 1000)
+    );
+
+    return () => timers.forEach(clearTimeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage.id]);
+
+  useEffect(() => {
     if (!currentPage.countdownEnabled || currentPageIndex >= pages.length - 1) return;
 
     const interval = setInterval(() => {
@@ -64,72 +92,110 @@ function PreviewOverlay({ onExit }: Props) {
         >
           {currentPage.dustEffect && <div className="preview-dust" />}
 
-          {currentPage.elements.map((el) => (
-            <div
-              key={el.id + el.animation}
-              className={`preview-el anim-${el.animation}`}
-              style={{ left: el.x, top: el.y, width: el.w, height: el.h }}
-            >
-              {el.type === "text" && (
+          {[...currentPage.elements]
+            .sort((a, b) => a.zIndex - b.zIndex)
+            .map((el) => {
+              const isVisible = visibleIds.has(el.id);
+              return (
                 <div
-                  className="preview-el-text"
-                  style={{
-                    fontFamily: el.style.fontFamily,
-                    fontSize: el.style.fontSize,
-                    color: el.style.color,
-                    opacity: el.style.opacity,
-                    fontWeight: el.style.bold ? 700 : 400,
-                    fontStyle: el.style.italic ? "italic" : "normal",
-                    textAlign: el.style.align
-                  }}
+                  key={el.id + el.animation + isVisible}
+                  className={`preview-el ${isVisible ? `anim-${el.animation}` : "preview-el-hidden"}`}
+                  style={{ left: el.x, top: el.y, width: el.w, height: el.h, zIndex: el.zIndex }}
                 >
-                  {el.content}
+                  {el.type === "text" && (
+                    <div
+                      className="preview-el-text"
+                      style={{
+                        fontFamily: el.style.fontFamily,
+                        fontSize: el.style.fontSize,
+                        color: el.style.color,
+                        opacity: el.style.opacity,
+                        fontWeight: el.style.bold ? 700 : 400,
+                        fontStyle: el.style.italic ? "italic" : "normal",
+                        textAlign: el.style.align,
+                        letterSpacing: el.style.letterSpacing
+                      }}
+                      dangerouslySetInnerHTML={{ __html: el.content }}
+                    />
+                  )}
+                  {el.type === "shape" && (
+                    <div className="preview-el-shape" style={{ opacity: el.style.opacity, backgroundColor: el.style.fill, borderRadius: el.style.radius }} />
+                  )}
+                  {el.type === "button" && (
+                    <button
+                      className="preview-el-button"
+                      style={{
+                        backgroundColor: el.style.fill,
+                        color: el.style.textColor,
+                        borderRadius: el.style.radius,
+                        fontSize: el.style.fontSize,
+                        opacity: el.style.opacity
+                      }}
+                      onClick={() => handleButtonClick(el.action)}
+                    >
+                      {el.label}
+                    </button>
+                  )}
+                  {el.type === "media" && el.kind === "image" && (
+                    <img
+                      src={el.src}
+                      className="preview-el-media"
+                      style={{
+                        borderRadius: el.style.radius,
+                        opacity: el.style.opacity,
+                        objectPosition: `${el.style.panX}% ${el.style.panY}%`,
+                        transform: `scaleX(${el.style.flipH ? -1 : 1}) scaleY(${el.style.flipV ? -1 : 1}) scale(${el.style.zoom})`
+                      }}
+                    />
+                  )}
+                  {el.type === "media" && el.kind === "video" && (
+                    <video
+                      src={el.src}
+                      className="preview-el-media"
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      style={{
+                        borderRadius: el.style.radius,
+                        opacity: el.style.opacity,
+                        objectPosition: `${el.style.panX}% ${el.style.panY}%`,
+                        transform: `scaleX(${el.style.flipH ? -1 : 1}) scaleY(${el.style.flipV ? -1 : 1}) scale(${el.style.zoom})`
+                      }}
+                    />
+                  )}
+                  {el.type === "draw" && (
+                    <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="preview-el-draw" style={{ opacity: el.style.opacity }}>
+                      <polyline
+                        points={el.points.map((p) => `${p.x},${p.y}`).join(" ")}
+                        fill="none"
+                        stroke={el.style.strokeColor}
+                        strokeWidth={el.style.strokeWidth}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        vectorEffect="non-scaling-stroke"
+                      />
+                    </svg>
+                  )}
                 </div>
-              )}
-              {el.type === "shape" && (
-                <div
-                  className="preview-el-shape"
-                  style={{
-                    backgroundColor: el.style.fill,
-                    borderRadius: el.style.radius,
-                    opacity: el.style.opacity
-                  }}
-                />
-              )}
-              {el.type === "button" && (
-                <div
-                  className="preview-el-button"
-                  style={{
-                    backgroundColor: el.style.fill,
-                    color: el.style.textColor,
-                    borderRadius: el.style.radius,
-                    fontSize: el.style.fontSize,
-                    opacity: el.style.opacity
-                  }}
-                >
-                  {el.label}
-                </div>
-              )}
-            </div>
-          ))}
+              );
+            })}
 
-          {currentPage.surpriseEffect !== "none" && (
-            <div className="preview-surprise" key={currentPage.id + "-surprise"}>
+          {burstEffect && (
+            <div className="preview-surprise" key={currentPage.id + "-surprise-" + burstEffect}>
               {Array.from({ length: 18 }).map((_, i) => (
                 <span
                   key={i}
                   className="preview-surprise-particle"
                   style={{ left: `${(i * 53) % 100}%`, animationDelay: `${(i % 6) * 0.15}s` }}
                 >
-                  {SURPRISE_EMOJI[currentPage.surpriseEffect]}
+                  {SURPRISE_EMOJI[burstEffect]}
                 </span>
               ))}
             </div>
           )}
 
-          {currentPage.countdownEnabled && hasNext && (
-            <div className="preview-countdown">{countdown}</div>
-          )}
+          {currentPage.countdownEnabled && hasNext && <div className="preview-countdown">{countdown}</div>}
         </div>
       </div>
 

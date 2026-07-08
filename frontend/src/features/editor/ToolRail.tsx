@@ -1,6 +1,6 @@
 import "./ToolRail.css";
 
-export type ToolTab = "text" | "shape" | "button" | "animation" | "effects" | "transition";
+export type ToolTab = "text" | "shape" | "button" | "upload" | "tools";
 
 const iconProps = { width: 19, height: 19, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8 };
 
@@ -34,31 +34,23 @@ const TABS: { id: ToolTab; label: string; icon: JSX.Element }[] = [
     )
   },
   {
-    id: "animation",
-    label: "Animation",
+    id: "upload",
+    label: "Upload",
     icon: (
       <svg {...iconProps}>
-        <path d="M4 12a8 8 0 1116 0 8 8 0 01-16 0z" />
-        <path d="M12 8v4l3 2" />
+        <rect x="3" y="4" width="18" height="16" rx="2" />
+        <circle cx="9" cy="10" r="1.5" />
+        <path d="M21 17l-6-5-4 3-3-2-4 3" />
       </svg>
     )
   },
   {
-    id: "effects",
-    label: "Effects",
+    id: "tools",
+    label: "Tools",
     icon: (
       <svg {...iconProps}>
-        <path d="M4 20l3-9 9-3-3 9-9 3z" />
-        <path d="M15 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1 1-2z" />
-      </svg>
-    )
-  },
-  {
-    id: "transition",
-    label: "Transition",
-    icon: (
-      <svg {...iconProps}>
-        <path d="M5 12h14M13 6l6 6-6 6" />
+        <path d="M14.7 6.3a3 3 0 104 4L21 8l-3-3-2.3 2.3z" />
+        <path d="M13 7l-8 8 2 2 8-8" />
       </svg>
     )
   }

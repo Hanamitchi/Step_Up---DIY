@@ -110,3 +110,32 @@
   background-color: rgba(217, 181, 74, 0.14) !important;
   color: #d9b54a !important;
 }
+
+.tool-panel-icon-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.tool-panel-icon-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background-color: #1f1a14;
+  border: 1px solid rgba(217, 181, 74, 0.22);
+  border-radius: 9px;
+  padding: 14px 6px;
+  color: #f3f1ea;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.tool-panel-icon-tile svg {
+  width: 22px;
+  height: 22px;
+}
+
+.tool-panel-icon-tile:hover {
+  border-color: #c9a227;
+}

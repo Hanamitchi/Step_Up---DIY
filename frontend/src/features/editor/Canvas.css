@@ -19,6 +19,10 @@
   box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(217, 181, 74, 0.15);
 }
 
+.canvas-artboard-drawing {
+  cursor: crosshair;
+}
+
 .canvas-dust {
   position: absolute;
   inset: 0;
@@ -64,9 +68,27 @@
   outline: none;
 }
 
-.editor-el-shape {
+.editor-el-text:hover {
+  cursor: text;
+}
+
+.editor-el-shape-icon {
   width: 100%;
   height: 100%;
+  overflow: visible;
+}
+
+.editor-el-media {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.editor-el-draw {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
 
 .editor-el-button {
