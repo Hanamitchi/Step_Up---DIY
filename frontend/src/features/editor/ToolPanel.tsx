@@ -32,12 +32,12 @@ function ToolPanel({ activeTab }: Props) {
     return (
       <div className="tool-panel">
         <p className="tool-panel-title">Add text</p>
-        <button className="tool-panel-tile" onClick={() => addElement(makeText(60, 60, "Your Heading", 32))}>
+        <button className="tool-panel-tile" onClick={() => addElement(makeText(60, 60, "Your Heading", 26))}>
           Heading
         </button>
         <button
           className="tool-panel-tile"
-          onClick={() => addElement(makeText(60, 130, "Add a little more detail here.", 16))}
+          onClick={() => addElement(makeText(60, 130, "Add a little more detail here.", 14))}
         >
           Body Text
         </button>

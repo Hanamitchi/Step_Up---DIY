@@ -41,6 +41,7 @@ function EditableText({ el }: { el: TextElement }) {
         fontFamily: el.style.fontFamily,
         fontSize: el.style.fontSize,
         color: el.style.color,
+        opacity: el.style.opacity,
         fontWeight: el.style.bold ? 700 : 400,
         fontStyle: el.style.italic ? "italic" : "normal",
         textAlign: el.style.align
@@ -130,7 +131,8 @@ function ElementNode({ el }: { el: CanvasElement }) {
               backgroundColor: el.style.fill,
               color: el.style.textColor,
               borderRadius: el.style.radius,
-              fontSize: el.style.fontSize
+              fontSize: el.style.fontSize,
+              opacity: el.style.opacity
             }}
           >
             {el.label}

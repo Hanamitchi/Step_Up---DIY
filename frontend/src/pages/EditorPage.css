@@ -51,6 +51,21 @@
   flex: 1;
 }
 
+.editor-preview-btn {
+  background-color: #d9b54a;
+  border: 1px solid #d9b54a;
+  color: #20180a;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 9px 18px;
+  border-radius: 8px;
+}
+
+.editor-preview-btn:hover {
+  background-color: #c9a227;
+  border-color: #c9a227;
+}
+
 .editor-main {
   flex: 1;
   display: flex;

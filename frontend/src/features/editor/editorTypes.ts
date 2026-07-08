@@ -6,10 +6,13 @@ export type AnimationPreset = "none" | "fade-in" | "slide-up" | "zoom-in" | "bou
 
 export type TransitionPreset = "cut" | "fade" | "slide";
 
+export type SurpriseEffect = "none" | "confetti" | "sparkle" | "fireworks";
+
 export type TextStyle = {
   fontFamily: string;
   fontSize: number;
   color: string;
+  opacity: number;
   bold: boolean;
   italic: boolean;
   align: "left" | "center" | "right";
@@ -26,6 +29,7 @@ export type ButtonStyle = {
   textColor: string;
   radius: number;
   fontSize: number;
+  opacity: number;
 };
 
 export type BaseElement = {
@@ -62,5 +66,8 @@ export type Page = {
   background: string;
   dustEffect: boolean;
   transition: TransitionPreset;
+  surpriseEffect: SurpriseEffect;
+  countdownEnabled: boolean;
+  countdownSeconds: number;
   elements: CanvasElement[];
 };

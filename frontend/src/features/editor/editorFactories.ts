@@ -5,7 +5,7 @@ function nextId(prefix: string) {
   return `${prefix}-${Date.now()}-${counter++}`;
 }
 
-export function makeText(x: number, y: number, content: string, fontSize = 24): TextElement {
+export function makeText(x: number, y: number, content: string, fontSize = 18): TextElement {
   return {
     id: nextId("text"),
     type: "text",
@@ -19,7 +19,8 @@ export function makeText(x: number, y: number, content: string, fontSize = 24): 
       fontFamily: "Helvetica, Arial, sans-serif",
       fontSize,
       color: "#f3f1ea",
-      bold: fontSize >= 28,
+      opacity: 1,
+      bold: fontSize >= 22,
       italic: false,
       align: "left"
     }
@@ -58,7 +59,8 @@ export function makeButton(x: number, y: number, label = "RSVP"): ButtonElement 
       fill: "#d9b54a",
       textColor: "#20180a",
       radius: 8,
-      fontSize: 14
+      fontSize: 14,
+      opacity: 1
     }
   };
 }

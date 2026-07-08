@@ -13,6 +13,9 @@ function createBlankPage(): Page {
     background: "#0c0b09",
     dustEffect: true,
     transition: "fade",
+    surpriseEffect: "none",
+    countdownEnabled: false,
+    countdownSeconds: 5,
     elements: []
   };
 }

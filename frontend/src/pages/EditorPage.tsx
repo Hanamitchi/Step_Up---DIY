@@ -8,12 +8,14 @@ import ToolPanel from "../features/editor/ToolPanel";
 import Canvas from "../features/editor/Canvas";
 import PropertiesPanel from "../features/editor/PropertiesPanel";
 import PageStrip from "../features/editor/PageStrip";
+import PreviewOverlay from "../features/editor/PreviewOverlay";
 import "./EditorPage.css";
 
 function EditorPageInner() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<ToolTab>("text");
   const [projectName, setProjectName] = useState("Untitled Greeting");
+  const [previewMode, setPreviewMode] = useState(false);
 
   return (
     <div className="editor-page">
@@ -27,6 +29,9 @@ function EditorPageInner() {
           onChange={(e) => setProjectName(e.target.value)}
         />
         <div className="editor-topbar-spacer" />
+        <button className="editor-preview-btn" onClick={() => setPreviewMode(true)}>
+          ▶ Preview
+        </button>
       </div>
 
       <div className="editor-main">
@@ -37,6 +42,8 @@ function EditorPageInner() {
       </div>
 
       <PageStrip />
+
+      {previewMode && <PreviewOverlay onExit={() => setPreviewMode(false)} />}
     </div>
   );
 }
