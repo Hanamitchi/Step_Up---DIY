@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { useEditor } from "../../store/EditorContext";
+import { stripHtml } from "./ElementNode";
 import type {
   AnimationPreset,
   ButtonAction,
@@ -40,6 +42,55 @@ const SURPRISES: { id: SurpriseEffect; label: string; emoji: string }[] = [
   { id: "fireworks", label: "Fireworks", emoji: "🎆" }
 ];
 
+const LAYER_OPTIONS: { id: "front" | "forward" | "backward" | "back"; label: string }[] = [
+  { id: "front", label: "Bring to Front" },
+  { id: "forward", label: "Bring Forward" },
+  { id: "backward", label: "Send Backward" },
+  { id: "back", label: "Send to Back" }
+];
+
+// Free-typing number input: keeps a local draft so backspacing to clear the
+// field doesn't get clamped back to the min value on every keystroke.
+function NumberField({
+  value,
+  min,
+  max,
+  onCommit
+}: {
+  value: number;
+  min?: number;
+  max?: number;
+  onCommit: (n: number) => void;
+}) {
+  const [local, setLocal] = useState(String(value));
+
+  useEffect(() => {
+    setLocal(String(value));
+  }, [value]);
+
+  function commit() {
+    let n = Number(local);
+    if (Number.isNaN(n)) n = value;
+    if (min !== undefined) n = Math.max(min, n);
+    if (max !== undefined) n = Math.min(max, n);
+    setLocal(String(n));
+    onCommit(n);
+  }
+
+  return (
+    <input
+      type="number"
+      className="properties-number-input"
+      value={local}
+      onChange={(e) => setLocal(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+      }}
+    />
+  );
+}
+
 function ColorControl({ value, onChange }: { value: string; onChange: (color: string) => void }) {
   return (
     <div className="properties-swatches">
@@ -63,8 +114,16 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 function PropertiesPanel() {
-  const { currentPage, selectedId, updateElement, deleteElement, updatePage, reorderElement, activeSelection, setActiveSelection } =
-    useEditor();
+  const {
+    currentPage,
+    selectedId,
+    updateElement,
+    deleteElement,
+    updatePage,
+    reorderElement,
+    activeSelection,
+    setActiveSelection
+  } = useEditor();
   const el = currentPage.elements.find((e) => e.id === selectedId);
 
   // ---------- No element selected: PAGE properties ----------
@@ -138,15 +197,11 @@ function PropertiesPanel() {
             </button>
           </div>
           {currentPage.countdownEnabled && (
-            <input
-              type="number"
-              className="properties-number-input"
+            <NumberField
+              value={currentPage.countdownSeconds}
               min={1}
               max={15}
-              value={currentPage.countdownSeconds}
-              onChange={(e) =>
-                updatePage({ countdownSeconds: Math.min(15, Math.max(1, Number(e.target.value))) })
-              }
+              onCommit={(n) => updatePage({ countdownSeconds: n })}
             />
           )}
         </div>
@@ -203,57 +258,44 @@ function PropertiesPanel() {
       <div className="properties-grid-2">
         <div className="properties-field">
           <label>X</label>
-          <input
-            type="number"
-            className="properties-number-input"
-            value={Math.round(el.x)}
-            onChange={(e) => patch({ x: Number(e.target.value) })}
-          />
+          <NumberField value={Math.round(el.x)} onCommit={(n) => patch({ x: n })} />
         </div>
         <div className="properties-field">
           <label>Y</label>
-          <input
-            type="number"
-            className="properties-number-input"
-            value={Math.round(el.y)}
-            onChange={(e) => patch({ y: Number(e.target.value) })}
-          />
+          <NumberField value={Math.round(el.y)} onCommit={(n) => patch({ y: n })} />
         </div>
         <div className="properties-field">
           <label>Width</label>
-          <input
-            type="number"
-            className="properties-number-input"
-            value={Math.round(el.w)}
-            onChange={(e) => patch({ w: Math.max(4, Number(e.target.value)) })}
-          />
+          <NumberField value={Math.round(el.w)} min={4} onCommit={(n) => patch({ w: n })} />
         </div>
         <div className="properties-field">
           <label>Height</label>
-          <input
-            type="number"
-            className="properties-number-input"
-            value={Math.round(el.h)}
-            onChange={(e) => patch({ h: Math.max(4, Number(e.target.value)) })}
-          />
+          <NumberField value={Math.round(el.h)} min={4} onCommit={(n) => patch({ h: n })} />
         </div>
       </div>
       <div className="properties-field">
+        <label>Angle</label>
+        <NumberField value={el.rotation} min={0} max={360} onCommit={(n) => patch({ rotation: n })} />
+      </div>
+      <div className="properties-field">
         <label>Layer</label>
-        <div className="properties-layer-buttons">
-          <button onClick={() => reorderElement(el.id, "back")} title="Send to back">
-            ⤓
-          </button>
-          <button onClick={() => reorderElement(el.id, "backward")} title="Send backward">
-            ↓
-          </button>
-          <button onClick={() => reorderElement(el.id, "forward")} title="Bring forward">
-            ↑
-          </button>
-          <button onClick={() => reorderElement(el.id, "front")} title="Bring to front">
-            ⤒
-          </button>
-        </div>
+        <select
+          className="properties-select"
+          value=""
+          onChange={(e) => {
+            if (e.target.value) reorderElement(el!.id, e.target.value as "front" | "forward" | "backward" | "back");
+            e.target.value = "";
+          }}
+        >
+          <option value="" disabled>
+            Choose an action…
+          </option>
+          {LAYER_OPTIONS.map((opt) => (
+            <option key={opt.id} value={opt.id}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* ---------- CONTENT (type-specific) ---------- */}
@@ -263,6 +305,19 @@ function PropertiesPanel() {
           {hasSelectionInThisText && (
             <p className="properties-selection-note">Styling your highlighted text only.</p>
           )}
+          <div className="properties-field">
+            <label>Content</label>
+            <textarea
+              className="properties-textarea"
+              value={stripHtml(el.content)}
+              onChange={(e) => patch({ content: e.target.value })}
+              rows={3}
+            />
+            <p className="properties-microhint">
+              Editing here replaces any per-letter formatting. Highlight text on the canvas to style just
+              part of it instead.
+            </p>
+          </div>
           <div className="properties-field">
             <label>Font</label>
             <select
@@ -280,24 +335,20 @@ function PropertiesPanel() {
           <div className="properties-grid-2">
             <div className="properties-field">
               <label>Size (1–30)</label>
-              <input
-                type="number"
-                className="properties-number-input"
+              <NumberField
+                value={el.style.fontSize}
                 min={1}
                 max={30}
-                value={el.style.fontSize}
-                onChange={(e) => applyTextStyle("fontSize", Math.min(30, Math.max(1, Number(e.target.value))))}
+                onCommit={(n) => applyTextStyle("fontSize", n)}
               />
             </div>
             <div className="properties-field">
               <label>Letter Spacing</label>
-              <input
-                type="number"
-                className="properties-number-input"
+              <NumberField
+                value={el.style.letterSpacing}
                 min={-2}
                 max={20}
-                value={el.style.letterSpacing}
-                onChange={(e) => applyTextStyle("letterSpacing", Number(e.target.value))}
+                onCommit={(n) => applyTextStyle("letterSpacing", n)}
               />
             </div>
           </div>
@@ -342,6 +393,10 @@ function PropertiesPanel() {
       {el.type === "shape" && (
         <>
           <SectionTitle>Shape</SectionTitle>
+          <div className="properties-field">
+            <label>Color</label>
+            <ColorControl value={el.style.fill} onChange={(c) => patch({ style: { ...el.style, fill: c } })} />
+          </div>
           {el.shape === "square" && (
             <div className="properties-field">
               <label>Corner radius</label>
@@ -377,7 +432,11 @@ function PropertiesPanel() {
               onChange={(e) => {
                 const kind = e.target.value as ButtonAction["kind"];
                 const action: ButtonAction =
-                  kind === "effect" ? { kind: "effect", effect: "confetti" } : kind === "next-page" ? { kind: "next-page" } : { kind: "link", url: "" };
+                  kind === "effect"
+                    ? { kind: "effect", effect: "confetti" }
+                    : kind === "next-page"
+                    ? { kind: "next-page" }
+                    : { kind: "link", url: "" };
                 patch({ action });
               }}
             >
@@ -412,6 +471,7 @@ function PropertiesPanel() {
                 value={el.action.url}
                 onChange={(e) => patch({ action: { kind: "link", url: e.target.value } })}
               />
+              <p className="properties-microhint">Opens in a new tab when tapped in Preview.</p>
             </div>
           )}
           <div className="properties-field">
@@ -434,6 +494,10 @@ function PropertiesPanel() {
       {el.type === "media" && (
         <>
           <SectionTitle>{el.kind === "image" ? "Image" : "Video"}</SectionTitle>
+          <p className="properties-microhint">
+            Resizing on the canvas only changes the frame size — nothing is auto-cropped. Use Zoom + Pan
+            below if you want to crop in.
+          </p>
           <div className="properties-field">
             <label>Flip</label>
             <div className="properties-toggle-group">
@@ -452,7 +516,7 @@ function PropertiesPanel() {
             </div>
           </div>
           <div className="properties-field">
-            <label>Zoom (crop)</label>
+            <label>Zoom (crop in)</label>
             <input
               type="range"
               min={100}
@@ -540,14 +604,7 @@ function PropertiesPanel() {
       </div>
       <div className="properties-field">
         <label>Appear After (0–5 sec)</label>
-        <input
-          type="number"
-          className="properties-number-input"
-          min={0}
-          max={5}
-          value={el.appearDelay}
-          onChange={(e) => patch({ appearDelay: Math.min(5, Math.max(0, Number(e.target.value))) })}
-        />
+        <NumberField value={el.appearDelay} min={0} max={5} onCommit={(n) => patch({ appearDelay: n })} />
       </div>
 
       <div className="properties-divider" />

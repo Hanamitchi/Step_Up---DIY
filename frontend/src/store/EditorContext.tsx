@@ -7,6 +7,11 @@ function nextPageId() {
   return `page-${Date.now()}-${pageCounter++}`;
 }
 
+let cloneCounter = 1;
+function nextCloneId() {
+  return `clone-${Date.now()}-${cloneCounter++}`;
+}
+
 function createBlankPage(): Page {
   return {
     id: nextPageId(),
@@ -26,6 +31,13 @@ export type ActiveTextSelection = {
   container: HTMLElement;
 };
 
+export type GuideLines = {
+  vertical: number[];
+  horizontal: number[];
+};
+
+const NO_GUIDES: GuideLines = { vertical: [], horizontal: [] };
+
 type EditorContextValue = {
   pages: Page[];
   currentPageId: string;
@@ -34,16 +46,20 @@ type EditorContextValue = {
   selectedId: string | null;
   pendingTool: ToolKind | null;
   activeSelection: ActiveTextSelection | null;
+  guideLines: GuideLines;
   setCurrentPageId: (id: string) => void;
   addPage: () => void;
   selectElement: (id: string | null) => void;
   addElement: (el: CanvasElement) => void;
   updateElement: (id: string, patch: Partial<CanvasElement>) => void;
   deleteElement: (id: string) => void;
+  duplicateElement: (id: string) => void;
   updatePage: (patch: Partial<Page>) => void;
   setPendingTool: (tool: ToolKind | null) => void;
   setActiveSelection: (selection: ActiveTextSelection | null) => void;
   reorderElement: (id: string, action: "front" | "forward" | "backward" | "back") => void;
+  setGuideLines: (guides: GuideLines) => void;
+  clearGuideLines: () => void;
 };
 
 const EditorContext = createContext<EditorContextValue | undefined>(undefined);
@@ -54,6 +70,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pendingTool, setPendingTool] = useState<ToolKind | null>(null);
   const [activeSelection, setActiveSelection] = useState<ActiveTextSelection | null>(null);
+  const [guideLines, setGuideLinesState] = useState<GuideLines>(NO_GUIDES);
 
   const currentPageIndex = Math.max(
     0,
@@ -108,6 +125,25 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     setSelectedId((prev) => (prev === id ? null : prev));
   }
 
+  function duplicateElement(id: string) {
+    setPages((prev) =>
+      prev.map((p) => {
+        if (p.id !== currentPageId) return p;
+        const source = p.elements.find((el) => el.id === id);
+        if (!source) return p;
+        const clone: CanvasElement = {
+          ...source,
+          id: nextCloneId(),
+          x: source.x + 16,
+          y: source.y + 16,
+          zIndex: p.elements.length + 1
+        };
+        setSelectedId(clone.id);
+        return { ...p, elements: [...p.elements, clone] };
+      })
+    );
+  }
+
   function updatePage(patch: Partial<Page>) {
     setPages((prev) => prev.map((p) => (p.id === currentPageId ? { ...p, ...patch } : p)));
   }
@@ -132,6 +168,14 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     );
   }
 
+  function setGuideLines(guides: GuideLines) {
+    setGuideLinesState(guides);
+  }
+
+  function clearGuideLines() {
+    setGuideLinesState(NO_GUIDES);
+  }
+
   const value: EditorContextValue = {
     pages,
     currentPageId,
@@ -140,16 +184,20 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     selectedId,
     pendingTool,
     activeSelection,
+    guideLines,
     setCurrentPageId,
     addPage,
     selectElement,
     addElement,
     updateElement,
     deleteElement,
+    duplicateElement,
     updatePage,
     setPendingTool,
     setActiveSelection,
-    reorderElement
+    reorderElement,
+    setGuideLines,
+    clearGuideLines
   };
 
   return <EditorContext.Provider value={value}>{children}</EditorContext.Provider>;

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useEditor } from "../../store/EditorContext";
+import { ShapeIcon } from "./ElementNode";
 import "./elementAnimations.css";
 import "./PreviewOverlay.css";
 
@@ -41,7 +42,8 @@ function PreviewOverlay({ onExit }: Props) {
       requestAnimationFrame(() => setBurstEffect(action.effect as string));
     }
     if (action.kind === "link" && action.url) {
-      window.open(action.url, "_blank", "noopener,noreferrer");
+      const url = /^https?:\/\//i.test(action.url) ? action.url : `https://${action.url}`;
+      window.open(url, "_blank", "noopener,noreferrer");
     }
   }
 
@@ -100,7 +102,7 @@ function PreviewOverlay({ onExit }: Props) {
                 <div
                   key={el.id + el.animation + isVisible}
                   className={`preview-el ${isVisible ? `anim-${el.animation}` : "preview-el-hidden"}`}
-                  style={{ left: el.x, top: el.y, width: el.w, height: el.h, zIndex: el.zIndex }}
+                  style={{ left: el.x, top: el.y, width: el.w, height: el.h, zIndex: el.zIndex, transform: `rotate(${el.rotation}deg)` }}
                 >
                   {el.type === "text" && (
                     <div
@@ -119,7 +121,9 @@ function PreviewOverlay({ onExit }: Props) {
                     />
                   )}
                   {el.type === "shape" && (
-                    <div className="preview-el-shape" style={{ opacity: el.style.opacity, backgroundColor: el.style.fill, borderRadius: el.style.radius }} />
+                    <svg viewBox="0 0 24 24" preserveAspectRatio="none" className="preview-el-shape" style={{ opacity: el.style.opacity }}>
+                      <ShapeIcon kind={el.shape} fill={el.style.fill} />
+                    </svg>
                   )}
                   {el.type === "button" && (
                     <button

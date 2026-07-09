@@ -15,7 +15,7 @@ function nextId(prefix: string) {
   return `${prefix}-${Date.now()}-${counter++}`;
 }
 
-const BASE_DEFAULTS = { zIndex: 1, animation: "none" as const, appearDelay: 0 };
+const BASE_DEFAULTS = { zIndex: 1, rotation: 0, animation: "none" as const, appearDelay: 0 };
 
 export function makeText(x: number, y: number, content: string, fontSize = 18): TextElement {
   return {

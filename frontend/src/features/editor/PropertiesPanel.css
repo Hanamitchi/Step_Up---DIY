@@ -71,6 +71,13 @@
   color: #9c9686;
 }
 
+.properties-microhint {
+  font-size: 11px;
+  line-height: 1.5;
+  color: #9c9686;
+  margin-top: 6px;
+}
+
 .properties-field {
   margin-bottom: 16px;
 }
