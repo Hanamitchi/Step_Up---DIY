@@ -176,6 +176,13 @@
   border-radius: 7px;
   font-size: 13px;
   margin-top: 8px;
+  -moz-appearance: textfield;
+}
+
+.properties-number-input::-webkit-outer-spin-button,
+.properties-number-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .properties-surprise-grid {

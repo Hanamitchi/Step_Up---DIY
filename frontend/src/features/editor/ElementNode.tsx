@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useEditor } from "../../store/EditorContext";
 import type { CanvasElement, ShapeKind, TextElement } from "./editorTypes";
@@ -40,7 +40,17 @@ function stripHtml(html: string): string {
   return div.innerText;
 }
 
-function EditableText({ el }: { el: TextElement }) {
+function EditableText({
+  el,
+  isEditing,
+  onEnterEdit,
+  onExitEdit
+}: {
+  el: TextElement;
+  isEditing: boolean;
+  onEnterEdit: () => void;
+  onExitEdit: () => void;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const { updateElement, setActiveSelection } = useEditor();
 
@@ -52,10 +62,17 @@ function EditableText({ el }: { el: TextElement }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [el.id]);
 
+  useEffect(() => {
+    if (isEditing && ref.current) {
+      ref.current.focus();
+    }
+  }, [isEditing]);
+
   function handleBlur() {
     if (ref.current) {
       updateElement(el.id, { content: ref.current.innerHTML });
     }
+    onExitEdit();
   }
 
   function captureSelection() {
@@ -70,9 +87,13 @@ function EditableText({ el }: { el: TextElement }) {
   return (
     <div
       ref={ref}
-      className="editor-el-text"
-      contentEditable
+      className={`editor-el-text ${isEditing ? "editor-el-text-editing" : ""}`}
+      contentEditable={isEditing}
       suppressContentEditableWarning
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        onEnterEdit();
+      }}
       onBlur={handleBlur}
       onMouseUp={captureSelection}
       onKeyUp={captureSelection}
@@ -107,6 +128,29 @@ function DeleteIcon() {
   );
 }
 
+function LockIcon({ locked }: { locked: boolean }) {
+  return locked ? (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <rect x="5" y="11" width="14" height="9" rx="1.5" />
+      <path d="M8 11V7a4 4 0 018 0v4" />
+    </svg>
+  ) : (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <rect x="5" y="11" width="14" height="9" rx="1.5" />
+      <path d="M8 11V7a4 4 0 017.8-1.3" />
+    </svg>
+  );
+}
+
+function RotateIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M4 12a8 8 0 1 1 2.6 5.9" />
+      <path d="M4 17v-4h4" />
+    </svg>
+  );
+}
+
 function ElementNode({ el }: { el: CanvasElement }) {
   const {
     selectedId,
@@ -119,10 +163,16 @@ function ElementNode({ el }: { el: CanvasElement }) {
     clearGuideLines
   } = useEditor();
   const isSelected = selectedId === el.id;
+  const [isEditingText, setIsEditingText] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   function handlePointerDown(e: ReactPointerEvent<HTMLDivElement>) {
-    if ((e.target as HTMLElement).dataset.handle || (e.target as HTMLElement).dataset.toolbar) return;
+    const target = e.target as HTMLElement;
+    if (target.dataset.handle || target.dataset.toolbar || target.dataset.rotateHandle) return;
+    if (el.type === "text" && isEditingText) return; // let native text selection happen
     selectElement(el.id);
+    if (el.locked) return;
+
     const startX = e.clientX;
     const startY = e.clientY;
     const originX = el.x;
@@ -183,6 +233,7 @@ function ElementNode({ el }: { el: CanvasElement }) {
   }
 
   function handleResizeStart(e: ReactPointerEvent<HTMLDivElement>, corner: "nw" | "ne" | "sw" | "se") {
+    if (el.locked) return;
     e.stopPropagation();
     e.preventDefault();
     const startX = e.clientX;
@@ -211,9 +262,33 @@ function ElementNode({ el }: { el: CanvasElement }) {
     window.addEventListener("pointerup", onUp);
   }
 
+  function handleRotateStart(e: ReactPointerEvent<HTMLDivElement>) {
+    if (el.locked) return;
+    e.stopPropagation();
+    e.preventDefault();
+
+    function onMove(ev: PointerEvent) {
+      const rect = wrapperRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const angleRad = Math.atan2(ev.clientY - centerY, ev.clientX - centerX);
+      let deg = angleRad * (180 / Math.PI) + 90;
+      deg = ((deg % 360) + 360) % 360;
+      updateElement(el.id, { rotation: Math.round(deg) });
+    }
+    function onUp() {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    }
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }
+
   return (
     <div
-      className={`editor-el ${isSelected ? "editor-el-selected" : ""}`}
+      ref={wrapperRef}
+      className={`editor-el ${isSelected ? "editor-el-selected" : ""} ${el.locked ? "editor-el-locked" : ""}`}
       style={{
         left: el.x,
         top: el.y,
@@ -232,11 +307,25 @@ function ElementNode({ el }: { el: CanvasElement }) {
           <button data-toolbar title="Delete" onClick={() => deleteElement(el.id)}>
             <DeleteIcon />
           </button>
+          <button
+            data-toolbar
+            title={el.locked ? "Unlock" : "Lock"}
+            onClick={() => updateElement(el.id, { locked: !el.locked })}
+          >
+            <LockIcon locked={el.locked} />
+          </button>
         </div>
       )}
 
       <div key={el.animation} className={`editor-el-inner ${ANIMATION_CLASS[el.animation]}`}>
-        {el.type === "text" && <EditableText el={el} />}
+        {el.type === "text" && (
+          <EditableText
+            el={el}
+            isEditing={isEditingText}
+            onEnterEdit={() => setIsEditingText(true)}
+            onExitEdit={() => setIsEditingText(false)}
+          />
+        )}
 
         {el.type === "shape" && (
           <svg
@@ -314,12 +403,21 @@ function ElementNode({ el }: { el: CanvasElement }) {
         )}
       </div>
 
-      {isSelected && (
+      {isSelected && !el.locked && (
         <>
           <div data-handle className="editor-handle editor-handle-nw" onPointerDown={(e) => handleResizeStart(e, "nw")} />
           <div data-handle className="editor-handle editor-handle-ne" onPointerDown={(e) => handleResizeStart(e, "ne")} />
           <div data-handle className="editor-handle editor-handle-sw" onPointerDown={(e) => handleResizeStart(e, "sw")} />
           <div data-handle className="editor-handle editor-handle-se" onPointerDown={(e) => handleResizeStart(e, "se")} />
+          <div className="editor-rotate-stalk" />
+          <div
+            data-rotate-handle
+            className="editor-rotate-handle"
+            title="Drag to rotate"
+            onPointerDown={handleRotateStart}
+          >
+            <RotateIcon />
+          </div>
         </>
       )}
     </div>

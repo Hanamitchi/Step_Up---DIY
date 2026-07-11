@@ -76,9 +76,21 @@
   cursor: grabbing;
 }
 
+.editor-el-locked {
+  cursor: default;
+}
+
+.editor-el-locked:active {
+  cursor: default;
+}
+
 .editor-el-selected {
   outline: 1.5px dashed #d9b54a;
   outline-offset: 2px;
+}
+
+.editor-el-locked.editor-el-selected {
+  outline: 1.5px dashed #9c9686;
 }
 
 .editor-el-inner {
@@ -97,6 +109,13 @@
 
 .editor-el-text:hover {
   cursor: text;
+}
+
+.editor-el-text-editing {
+  cursor: text;
+  outline: 1px solid rgba(217, 181, 74, 0.5);
+  outline-offset: 3px;
+  user-select: text;
 }
 
 .editor-el-shape-icon {
@@ -139,6 +158,39 @@
 
 .editor-el-toolbar button:hover {
   background-color: rgba(217, 181, 74, 0.16);
+}
+
+.editor-rotate-stalk {
+  position: absolute;
+  left: 50%;
+  bottom: -26px;
+  width: 1px;
+  height: 20px;
+  background-color: rgba(217, 181, 74, 0.5);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.editor-rotate-handle {
+  position: absolute;
+  left: 50%;
+  bottom: -38px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #161310;
+  border: 1.5px solid #d9b54a;
+  color: #d9b54a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateX(-50%);
+  cursor: grab;
+  z-index: 20;
+}
+
+.editor-rotate-handle:active {
+  cursor: grabbing;
 }
 
 .editor-el-draw {

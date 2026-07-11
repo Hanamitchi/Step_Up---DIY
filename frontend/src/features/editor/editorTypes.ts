@@ -67,6 +67,7 @@ export type BaseElement = {
   h: number;
   rotation: number; // degrees, 0-360
   zIndex: number;
+  locked: boolean;
   animation: AnimationPreset;
   appearDelay: number; // seconds, 0-5 — countdown before the element appears
 };
