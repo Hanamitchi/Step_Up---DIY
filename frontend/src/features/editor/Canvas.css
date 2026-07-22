@@ -171,10 +171,17 @@
   pointer-events: none;
 }
 
-.editor-rotate-handle {
+.editor-el-bottom-controls {
   position: absolute;
   left: 50%;
   bottom: -38px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 20;
+}
+
+.editor-el-bottom-controls button {
   width: 20px;
   height: 20px;
   border-radius: 50%;
@@ -184,12 +191,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transform: translateX(-50%);
   cursor: grab;
-  z-index: 20;
 }
 
-.editor-rotate-handle:active {
+.editor-el-bottom-controls button:active {
   cursor: grabbing;
 }
 

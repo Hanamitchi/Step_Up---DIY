@@ -13,6 +13,8 @@ const ANIMATION_CLASS: Record<CanvasElement["animation"], string> = {
   bounce: "anim-bounce"
 };
 
+const CLICK_DRAG_THRESHOLD = 4;
+
 function ShapeIcon({ kind, fill }: { kind: ShapeKind; fill: string }) {
   if (kind === "square") return <rect x="1" y="1" width="22" height="22" fill={fill} />;
   if (kind === "circle") return <ellipse cx="12" cy="12" rx="11" ry="11" fill={fill} />;
@@ -43,12 +45,10 @@ function stripHtml(html: string): string {
 function EditableText({
   el,
   isEditing,
-  onEnterEdit,
   onExitEdit
 }: {
   el: TextElement;
   isEditing: boolean;
-  onEnterEdit: () => void;
   onExitEdit: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -79,8 +79,6 @@ function EditableText({
     const sel = window.getSelection();
     if (sel && sel.rangeCount > 0 && !sel.isCollapsed && ref.current && ref.current.contains(sel.anchorNode)) {
       setActiveSelection({ elementId: el.id, range: sel.getRangeAt(0), container: ref.current });
-    } else {
-      setActiveSelection(null);
     }
   }
 
@@ -90,10 +88,6 @@ function EditableText({
       className={`editor-el-text ${isEditing ? "editor-el-text-editing" : ""}`}
       contentEditable={isEditing}
       suppressContentEditableWarning
-      onDoubleClick={(e) => {
-        e.stopPropagation();
-        onEnterEdit();
-      }}
       onBlur={handleBlur}
       onMouseUp={captureSelection}
       onKeyUp={captureSelection}
@@ -144,9 +138,17 @@ function LockIcon({ locked }: { locked: boolean }) {
 
 function RotateIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M4 12a8 8 0 1 1 2.6 5.9" />
       <path d="M4 17v-4h4" />
+    </svg>
+  );
+}
+
+function MoveIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2v20M2 12h20M5 9l-3 3 3 3M19 9l3 3-3 3M9 5l3-3 3 3M9 19l3 3 3-3" />
     </svg>
   );
 }
@@ -166,62 +168,63 @@ function ElementNode({ el }: { el: CanvasElement }) {
   const [isEditingText, setIsEditingText] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  function handlePointerDown(e: ReactPointerEvent<HTMLDivElement>) {
-    const target = e.target as HTMLElement;
-    if (target.dataset.handle || target.dataset.toolbar || target.dataset.rotateHandle) return;
-    if (el.type === "text" && isEditingText) return; // let native text selection happen
-    selectElement(el.id);
-    if (el.locked) return;
+  function findSnap(
+    selfPoints: { offset: number; value: number }[],
+    targets: number[]
+  ): { pos: number; guide: number } | null {
+    for (const target of targets) {
+      for (const sp of selfPoints) {
+        if (Math.abs(sp.value - target) < SNAP_THRESHOLD) {
+          return { pos: target - sp.offset, guide: target };
+        }
+      }
+    }
+    return null;
+  }
 
+  function snappedPosition(originX: number, originY: number, dx: number, dy: number) {
+    let newX = originX + dx;
+    let newY = originY + dy;
+    const others = currentPage.elements.filter((other) => other.id !== el.id);
+
+    const targetsX = [0, CANVAS_SIZE / 2, CANVAS_SIZE, ...others.flatMap((o) => [o.x, o.x + o.w / 2, o.x + o.w])];
+    const targetsY = [0, CANVAS_SIZE / 2, CANVAS_SIZE, ...others.flatMap((o) => [o.y, o.y + o.h / 2, o.y + o.h])];
+
+    const selfX = [
+      { offset: 0, value: newX },
+      { offset: el.w / 2, value: newX + el.w / 2 },
+      { offset: el.w, value: newX + el.w }
+    ];
+    const selfY = [
+      { offset: 0, value: newY },
+      { offset: el.h / 2, value: newY + el.h / 2 },
+      { offset: el.h, value: newY + el.h }
+    ];
+
+    const snapX = findSnap(selfX, targetsX);
+    const snapY = findSnap(selfY, targetsY);
+    if (snapX) newX = snapX.pos;
+    if (snapY) newY = snapY.pos;
+
+    setGuideLines({
+      vertical: snapX ? [snapX.guide] : [],
+      horizontal: snapY ? [snapY.guide] : []
+    });
+
+    return { x: newX, y: newY };
+  }
+
+  function beginMove(e: ReactPointerEvent) {
+    e.stopPropagation();
+    if (el.locked) return;
     const startX = e.clientX;
     const startY = e.clientY;
     const originX = el.x;
     const originY = el.y;
-    const others = currentPage.elements.filter((other) => other.id !== el.id);
-
-    function findSnap(
-      selfPoints: { offset: number; value: number }[],
-      targets: number[]
-    ): { pos: number; guide: number } | null {
-      for (const target of targets) {
-        for (const sp of selfPoints) {
-          if (Math.abs(sp.value - target) < SNAP_THRESHOLD) {
-            return { pos: target - sp.offset, guide: target };
-          }
-        }
-      }
-      return null;
-    }
 
     function onMove(ev: PointerEvent) {
-      let newX = originX + (ev.clientX - startX);
-      let newY = originY + (ev.clientY - startY);
-
-      const targetsX = [0, CANVAS_SIZE / 2, CANVAS_SIZE, ...others.flatMap((o) => [o.x, o.x + o.w / 2, o.x + o.w])];
-      const targetsY = [0, CANVAS_SIZE / 2, CANVAS_SIZE, ...others.flatMap((o) => [o.y, o.y + o.h / 2, o.y + o.h])];
-
-      const selfX = [
-        { offset: 0, value: newX },
-        { offset: el.w / 2, value: newX + el.w / 2 },
-        { offset: el.w, value: newX + el.w }
-      ];
-      const selfY = [
-        { offset: 0, value: newY },
-        { offset: el.h / 2, value: newY + el.h / 2 },
-        { offset: el.h, value: newY + el.h }
-      ];
-
-      const snapX = findSnap(selfX, targetsX);
-      const snapY = findSnap(selfY, targetsY);
-      if (snapX) newX = snapX.pos;
-      if (snapY) newY = snapY.pos;
-
-      setGuideLines({
-        vertical: snapX ? [snapX.guide] : [],
-        horizontal: snapY ? [snapY.guide] : []
-      });
-
-      updateElement(el.id, { x: newX, y: newY });
+      const { x, y } = snappedPosition(originX, originY, ev.clientX - startX, ev.clientY - startY);
+      updateElement(el.id, { x, y });
     }
     function onUp() {
       window.removeEventListener("pointermove", onMove);
@@ -230,6 +233,47 @@ function ElementNode({ el }: { el: CanvasElement }) {
     }
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
+  }
+
+  function handlePointerDown(e: ReactPointerEvent<HTMLDivElement>) {
+    const target = e.target as HTMLElement;
+    if (target.dataset.handle || target.dataset.toolbar || target.dataset.rotateHandle || target.dataset.moveHandle)
+      return;
+
+    // Text elements: distinguish a plain click (enter edit mode) from a drag (move the box).
+    if (el.type === "text" && !isEditingText) {
+      selectElement(el.id);
+      if (el.locked) return;
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const originX = el.x;
+      const originY = el.y;
+      let dragging = false;
+
+      function onMove(ev: PointerEvent) {
+        const dist = Math.hypot(ev.clientX - startX, ev.clientY - startY);
+        if (!dragging && dist > CLICK_DRAG_THRESHOLD) dragging = true;
+        if (dragging) {
+          const { x, y } = snappedPosition(originX, originY, ev.clientX - startX, ev.clientY - startY);
+          updateElement(el.id, { x, y });
+        }
+      }
+      function onUp() {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+        clearGuideLines();
+        if (!dragging) setIsEditingText(true);
+      }
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+      return;
+    }
+
+    if (el.type === "text" && isEditingText) return; // let native text selection happen
+
+    selectElement(el.id);
+    if (el.locked) return;
+    beginMove(e);
   }
 
   function handleResizeStart(e: ReactPointerEvent<HTMLDivElement>, corner: "nw" | "ne" | "sw" | "se") {
@@ -262,7 +306,7 @@ function ElementNode({ el }: { el: CanvasElement }) {
     window.addEventListener("pointerup", onUp);
   }
 
-  function handleRotateStart(e: ReactPointerEvent<HTMLDivElement>) {
+  function handleRotateStart(e: ReactPointerEvent) {
     if (el.locked) return;
     e.stopPropagation();
     e.preventDefault();
@@ -273,7 +317,9 @@ function ElementNode({ el }: { el: CanvasElement }) {
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
       const angleRad = Math.atan2(ev.clientY - centerY, ev.clientX - centerX);
-      let deg = angleRad * (180 / Math.PI) + 90;
+      // The handle rests directly below the element (pointing down = no rotation),
+      // so we subtract 90 deg to make that resting position equal 0 deg.
+      let deg = angleRad * (180 / Math.PI) - 90;
       deg = ((deg % 360) + 360) % 360;
       updateElement(el.id, { rotation: Math.round(deg) });
     }
@@ -322,7 +368,6 @@ function ElementNode({ el }: { el: CanvasElement }) {
           <EditableText
             el={el}
             isEditing={isEditingText}
-            onEnterEdit={() => setIsEditingText(true)}
             onExitEdit={() => setIsEditingText(false)}
           />
         )}
@@ -410,13 +455,13 @@ function ElementNode({ el }: { el: CanvasElement }) {
           <div data-handle className="editor-handle editor-handle-sw" onPointerDown={(e) => handleResizeStart(e, "sw")} />
           <div data-handle className="editor-handle editor-handle-se" onPointerDown={(e) => handleResizeStart(e, "se")} />
           <div className="editor-rotate-stalk" />
-          <div
-            data-rotate-handle
-            className="editor-rotate-handle"
-            title="Drag to rotate"
-            onPointerDown={handleRotateStart}
-          >
-            <RotateIcon />
+          <div className="editor-el-bottom-controls">
+            <button data-move-handle title="Drag to move" onPointerDown={beginMove}>
+              <MoveIcon />
+            </button>
+            <button data-rotate-handle title="Drag to rotate" onPointerDown={handleRotateStart}>
+              <RotateIcon />
+            </button>
           </div>
         </>
       )}

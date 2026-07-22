@@ -218,7 +218,10 @@ function PropertiesPanel() {
     updateElement(el!.id, p);
   }
 
-  function applyTextStyle(prop: "fontSize" | "color" | "fontFamily" | "letterSpacing", value: string | number) {
+  function applyTextStyle(
+    prop: "fontSize" | "color" | "fontFamily" | "letterSpacing" | "bold" | "italic",
+    value: string | number | boolean
+  ) {
     if (el!.type !== "text") return;
     const sel = activeSelection;
     if (sel && sel.elementId === el!.id && sel.range && !sel.range.collapsed) {
@@ -227,6 +230,8 @@ function PropertiesPanel() {
       if (prop === "color") span.style.color = String(value);
       if (prop === "fontFamily") span.style.fontFamily = String(value);
       if (prop === "letterSpacing") span.style.letterSpacing = `${value}px`;
+      if (prop === "bold") span.style.fontWeight = value ? "700" : "400";
+      if (prop === "italic") span.style.fontStyle = value ? "italic" : "normal";
       try {
         sel.range.surroundContents(span);
       } catch {
@@ -235,9 +240,19 @@ function PropertiesPanel() {
         sel.range.insertNode(span);
       }
       updateElement(el!.id, { content: sel.container.innerHTML });
-      setActiveSelection(null);
+
+      // Keep the highlight alive (both visually and in our tracked state) so the
+      // next property change applies to the same selection, instead of losing it.
+      const newRange = document.createRange();
+      newRange.selectNodeContents(span);
+      const winSel = window.getSelection();
+      winSel?.removeAllRanges();
+      winSel?.addRange(newRange);
+      setActiveSelection({ elementId: el!.id, range: newRange, container: sel.container });
     } else if (el!.type === "text") {
-      updateElement(el!.id, { style: { ...el!.style, [prop]: value } });
+      if (prop === "bold") updateElement(el!.id, { style: { ...el!.style, bold: Boolean(value) } });
+      else if (prop === "italic") updateElement(el!.id, { style: { ...el!.style, italic: Boolean(value) } });
+      else updateElement(el!.id, { style: { ...el!.style, [prop]: value } });
     }
   }
 
@@ -310,7 +325,10 @@ function PropertiesPanel() {
             <textarea
               className="properties-textarea"
               value={stripHtml(el.content)}
-              onChange={(e) => patch({ content: e.target.value })}
+              onChange={(e) => {
+                setActiveSelection(null);
+                patch({ content: e.target.value });
+              }}
               rows={3}
             />
             <p className="properties-microhint">
@@ -361,13 +379,13 @@ function PropertiesPanel() {
             <div className="properties-toggle-group">
               <button
                 className={el.style.bold ? "on" : ""}
-                onClick={() => patch({ style: { ...el.style, bold: !el.style.bold } })}
+                onClick={() => applyTextStyle("bold", !el.style.bold)}
               >
                 <b>B</b>
               </button>
               <button
                 className={el.style.italic ? "on" : ""}
-                onClick={() => patch({ style: { ...el.style, italic: !el.style.italic } })}
+                onClick={() => applyTextStyle("italic", !el.style.italic)}
               >
                 <i>I</i>
               </button>

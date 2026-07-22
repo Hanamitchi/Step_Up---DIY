@@ -15,10 +15,10 @@ function Canvas() {
     selectElement(null);
   }
 
-  function toLocalPoint(e: PointerEvent | ReactPointerEvent<HTMLDivElement>) {
+  function toLocalPoint(clientX: number, clientY: number) {
     const rect = artboardRef.current?.getBoundingClientRect();
     if (!rect) return { x: 0, y: 0 };
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    return { x: clientX - rect.left, y: clientY - rect.top };
   }
 
   function handleArtboardPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
@@ -28,25 +28,26 @@ function Canvas() {
     }
     if (e.target !== e.currentTarget) return;
 
+    e.currentTarget.setPointerCapture(e.pointerId);
     isCapturing.current = true;
-    const start = toLocalPoint(e);
-    setLivePoints([start]);
+    setLivePoints([toLocalPoint(e.clientX, e.clientY)]);
+  }
 
-    function onMove(ev: PointerEvent) {
-      if (!isCapturing.current) return;
-      const point = toLocalPoint(ev);
-      setLivePoints((prev) => (pendingTool === "draw" ? [...prev, point] : [prev[0], point]));
+  function handleArtboardPointerMove(e: ReactPointerEvent<HTMLDivElement>) {
+    if (!isCapturing.current || !pendingTool) return;
+    const point = toLocalPoint(e.clientX, e.clientY);
+    setLivePoints((prev) => (pendingTool === "draw" ? [...prev, point] : [prev[0], point]));
+  }
+
+  function handleArtboardPointerUp(e: ReactPointerEvent<HTMLDivElement>) {
+    if (!isCapturing.current) return;
+    isCapturing.current = false;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      // pointer may already be released — safe to ignore
     }
-
-    function onUp() {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-      isCapturing.current = false;
-      finishCapture();
-    }
-
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
+    finishCapture();
   }
 
   function finishCapture() {
@@ -81,8 +82,10 @@ function Canvas() {
       <div
         ref={artboardRef}
         className={`canvas-artboard ${pendingTool ? "canvas-artboard-drawing" : ""}`}
-        style={{ backgroundColor: currentPage.background }}
+        style={{ backgroundColor: currentPage.background, touchAction: pendingTool ? "none" : "auto" }}
         onPointerDown={handleArtboardPointerDown}
+        onPointerMove={handleArtboardPointerMove}
+        onPointerUp={handleArtboardPointerUp}
       >
         {currentPage.dustEffect && <div className="canvas-dust" />}
 
